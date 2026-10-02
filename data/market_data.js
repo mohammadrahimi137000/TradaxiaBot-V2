@@ -1,5 +1,7 @@
 // Market Data Layer
-// Prepares normalized OHLC data for Market Engine
+// Normalizes OHLC candles and calculates market metrics
+
+import { fetchXAUUSD } from './xauusd_adapter.js';
 
 export function normalizeCandles(candles = []) {
   return candles.map(candle => ({
@@ -34,8 +36,7 @@ export function calculateVolatility(candles = []) {
   return Number(average.toFixed(4));
 }
 
-export async function fetchXauCandles() {
-  // Provider adapter.
-  // Real XAU/USD API connection will be plugged here.
-  return [];
+export async function fetchXauCandles(config = {}) {
+  const result = await fetchXAUUSD(config.url, config.apiKey);
+  return normalizeCandles(result.candles);
 }
