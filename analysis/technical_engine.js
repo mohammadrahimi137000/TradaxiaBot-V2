@@ -1,5 +1,5 @@
-// TradaxiaBot Technical Engine V1
-// Multi-tool analysis layer: structure, indicators and market zones.
+// TradaxiaBot Technical Engine V2
+// Multi-layer analysis: indicators, structure and chart patterns.
 
 export function analyzeTechnicalMarket(input = {}) {
   const {
@@ -7,18 +7,24 @@ export function analyzeTechnicalMarket(input = {}) {
     orderBlocks = [],
     fvg = [],
     zones = [],
-    indicators = {}
+    indicators = {},
+    patterns = {},
+    structure = {}
   } = input;
 
   return {
     zones,
     orderBlocks,
     fvg,
+    structure,
+    patterns,
     indicators: {
       ema: indicators.ema || null,
       ichimoku: indicators.ichimoku || null,
       rsi: indicators.rsi || null,
+      rsiDivergence: indicators.rsiDivergence || null,
       macd: indicators.macd || null,
+      macdDivergence: indicators.macdDivergence || null,
       atr: indicators.atr || null,
       adx: indicators.adx || null,
       vwap: indicators.vwap || null
