@@ -9,6 +9,7 @@ export default {
     if (url.pathname === '/') {
       return Response.json({
         bot: 'TradaxiaBot V2',
+        market: 'XAU/USD',
         status: 'online',
         engines: ['market', 'decision', 'risk']
       });
@@ -20,6 +21,7 @@ export default {
       const risk = calculateRisk(decision);
 
       return Response.json({
+        symbol: 'XAU/USD',
         market,
         decision,
         risk
