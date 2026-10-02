@@ -1,7 +1,8 @@
-import { calculateMomentum } from '../data/market_data.js';
+import { calculateMomentum, calculateVolatility } from '../data/market_data.js';
 
 export function analyzeMarket(candles = []) {
   const momentum = calculateMomentum(candles);
+  const volatility = calculateVolatility(candles);
 
   let trend = 'neutral';
 
@@ -12,7 +13,7 @@ export function analyzeMarket(candles = []) {
     symbol: 'XAU/USD',
     trend,
     momentum,
-    volatility: 'pending',
+    volatility,
     candles: candles.length
   };
 }
