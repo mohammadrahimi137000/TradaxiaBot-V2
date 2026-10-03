@@ -74,3 +74,4 @@ function run(mode){
   return{mode,system:outcomes(trades),grossR:+netR.toFixed(4),pinBar:{detectedTrades:pin.length,alignedSignals:aligned.length,contrarySignals:pin.length-aligned.length,all:outcomes(pin),aligned:outcomes(aligned)}};
 }
 console.log(JSON.stringify({dataset:{source:DATA_URL,rows:m5.length,start:new Date(m5[0].time).toISOString(),end:new Date(m5.at(-1).time).toISOString()},configuration:{primary:"15min",context:["1h","30min","15min","5min"],stepBars:step,horizonBars:horizon,lookbackPerFrame:500},tests:MODES.map(run)},null,2));
+
