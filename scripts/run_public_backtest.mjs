@@ -82,7 +82,7 @@ const multi={
   "30min":resample(m5,30),
   "1h":resample(m5,60)
 };
-const primary=multi["15min"];
+const primary=multi["15min"];\nconst startDate=process.env.START_DATE?Date.parse(process.env.START_DATE):null;\nconst endDate=process.env.END_DATE?Date.parse(process.env.END_DATE):null;
 const step=4;
 const horizon=20;
 const trades=[];
@@ -110,7 +110,7 @@ const by=(xs,x)=>({total:xs.length,wins:xs.filter(t=>t.outcome.startsWith("TP"))
 
 console.log(JSON.stringify({
   dataset:{source:DATA_URL,rows:m5.length,start:new Date(m5[0].time).toISOString(),end:new Date(m5.at(-1).time).toISOString()},
-  configuration:{primary:"15min",context:["1h","30min","15min","5min"],stepBars:step,horizonBars:horizon,lookbackPerFrame:500},
+  configuration:{primary:"15min",context:["1h","30min","15min","5min"],stepBars:step,horizonBars:horizon,lookbackPerFrame:500,startDate:process.env.START_DATE||null,endDate:process.env.END_DATE||null},
   metrics:{
     totalSignals:trades.length,
     wins,
