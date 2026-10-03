@@ -2,7 +2,7 @@ name: V2 Public XAUUSD Backtest
 
 on:
   push:
-    branches: ["v2-professional"]
+    branches: ["v2-professional","v2-winrate-iteration-1"]
   pull_request:
     branches: ["main"]
   workflow_dispatch:
