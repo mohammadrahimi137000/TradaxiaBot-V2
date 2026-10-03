@@ -1,6 +1,7 @@
 import { analyzeMarket } from "../core/market_engine.js";
 import { makeDecision } from "../core/decision_engine.js";
 import { calculateRisk } from "../core/risk_engine.js";
+import fs from "node:fs";
 
 const DATA_URL="https://raw.githubusercontent.com/getdata-finance/xauusd-5m-ohlcv-metals-historical-data/main/XAUUSD_5m.csv";
 
@@ -52,24 +53,27 @@ function snapshotAt(arr,t){
   return arr.slice(Math.max(0,n-500),n);
 }
 
+const PIP_SIZE=0.01; // XAU/USD: 0.01 price move = 1 pip
+
 function evaluateTrade(d,r,future){
   const tp=r.takeProfits.map(x=>x.price);
-  let hit=0,outcome="TIMEOUT";
+  let hit=0,outcome="TIMEOUT",exitPrice=null;
   for(const c of future){
     if(d.signal==="BUY"){
-      if(c.low<=r.stopLoss){outcome="SL";break}
-      if(c.high>=tp[2]){outcome="TP3";break}
+      if(c.low<=r.stopLoss){outcome="SL";exitPrice=r.stopLoss;break}
+      if(c.high>=tp[2]){outcome="TP3";exitPrice=tp[2];break}
       if(c.high>=tp[1]) hit=Math.max(hit,2);
       if(c.high>=tp[0]) hit=Math.max(hit,1);
     }else{
-      if(c.high>=r.stopLoss){outcome="SL";break}
-      if(c.low<=tp[2]){outcome="TP3";break}
+      if(c.high>=r.stopLoss){outcome="SL";exitPrice=r.stopLoss;break}
+      if(c.low<=tp[2]){outcome="TP3";exitPrice=tp[2];break}
       if(c.low<=tp[1]) hit=Math.max(hit,2);
       if(c.low<=tp[0]) hit=Math.max(hit,1);
     }
   }
-  if(outcome==="TIMEOUT"&&hit) outcome="TP"+hit;
-  return outcome;
+  if(outcome==="TIMEOUT"&&hit) { outcome="TP"+hit; exitPrice=tp[hit-1]; }
+  const pipDelta=exitPrice==null?0:(d.signal==="BUY"?(exitPrice-r.entry):(r.entry-exitPrice))/PIP_SIZE;
+  return {outcome,exitPrice,pips:Number(pipDelta.toFixed(2)),entry:r.entry,stopLoss:r.stopLoss,takeProfits:tp};
 }
 
 const res=await fetch(DATA_URL);
@@ -98,11 +102,14 @@ for(let i=80;i+horizon<primary.length;i+=step){
   const decision=makeDecision(market);
   const risk=calculateRisk(decision,market);
   if(!risk.active) continue;
-  const outcome=evaluateTrade(decision,risk,primary.slice(i+1,i+1+horizon));
-  trades.push({time:t,signal:decision.signal,confidence:decision.confidence,outcome});
+  const result=evaluateTrade(decision,risk,primary.slice(i+1,i+1+horizon));
+  trades.push({time:t,signal:decision.signal,confidence:decision.confidence,...result});
 }
 
 const count=x=>trades.filter(t=>t.outcome===x).length;
+const profitPips=trades.filter(t=>t.pips>0).reduce((s,t)=>s+t.pips,0);
+const lossPips=Math.abs(trades.filter(t=>t.pips<0).reduce((s,t)=>s+t.pips,0));
+const netPips=profitPips-lossPips;
 const wins=trades.filter(t=>t.outcome.startsWith("TP")).length;
 const buys=trades.filter(t=>t.signal==="BUY");
 const sells=trades.filter(t=>t.signal==="SELL");
@@ -120,7 +127,15 @@ console.log(JSON.stringify({
     tp1:count("TP1"),tp2:count("TP2"),tp3:count("TP3"),
     tp1HitRate:trades.length?Math.round(trades.filter(t=>["TP1","TP2","TP3"].includes(t.outcome)).length/trades.length*10000)/100:0,
     tp2HitRate:trades.length?Math.round(trades.filter(t=>["TP2","TP3"].includes(t.outcome)).length/trades.length*10000)/100:0,
-    tp3HitRate:trades.length?Math.round(count("TP3")/trades.length*10000)/100:0
+    tp3HitRate:trades.length?Math.round(count("TP3")/trades.length*10000)/100:0,
+    profitPips:Number(profitPips.toFixed(2)),
+    lossPips:Number(lossPips.toFixed(2)),
+    netPips:Number(netPips.toFixed(2)),
+    avgPipsPerTrade:trades.length?Number((netPips/trades.length).toFixed(2)):0
   },
   byDirection:{BUY:by(buys),SELL:by(sells)}
 },null,2));
+
+fs.mkdirSync("artifacts",{recursive:true});
+fs.writeFileSync("artifacts/backtest-pips.json",JSON.stringify({configuration:{pipSize:PIP_SIZE,pipDefinition:"1 pip = 0.01 XAU/USD price move"},trades},null,2));
+fs.writeFileSync("artifacts/backtest-pips.csv",["time,signal,confidence,outcome,entry,exitPrice,stopLoss,tp1,tp2,tp3,pips",...trades.map(t=>[t.time,t.signal,t.confidence,t.outcome,t.entry,t.exitPrice,t.stopLoss,t.takeProfits[0],t.takeProfits[1],t.takeProfits[2],t.pips].join(","))].join("\n"));
