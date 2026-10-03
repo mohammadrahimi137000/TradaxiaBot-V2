@@ -1,0 +1,13 @@
+name: Main Real Historical Backtest
+on:
+  workflow_dispatch:
+  push:
+    branches: [tmp/main-real-backtest-20261003]
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 20}
+      - run: node scripts/main_real_backtest.mjs
