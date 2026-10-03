@@ -105,7 +105,8 @@ for(let i=80;i+horizon<primary.length;i+=step){
   const risk=calculateRisk(decision,market);
   if(!risk.active) continue;
   const result=evaluateTrade(decision,risk,primary.slice(i+1,i+1+horizon));
-  const pattern=market.frames["15min"]?.candlestick?.pattern??"NONE";\n  trades.push({time:t,signal:decision.signal,confidence:decision.confidence,pattern,...result});
+  const pattern=market.frames["15min"]?.candlestick?.pattern??"NONE";
+  trades.push({time:t,signal:decision.signal,confidence:decision.confidence,pattern,...result});
 }
 
 const count=x=>trades.filter(t=>t.outcome===x).length;
