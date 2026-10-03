@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
   push:
     branches: [tmp/main-real-backtest-20261003]
+  pull_request:
+    branches: [main]
 jobs:
   backtest:
     runs-on: ubuntu-latest
