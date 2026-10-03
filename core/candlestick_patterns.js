@@ -8,10 +8,9 @@ export function detectEngulfing(candles){
   if(!a||!b)return{pattern:"NONE",bias:0};
   const aHigh=Math.max(a.open,a.close),aLow=Math.min(a.open,a.close);
   const bHigh=Math.max(b.open,b.close),bLow=Math.min(b.open,b.close);
+  const engulf=bHigh>=aHigh&&bLow<=aLow&&body(b)>=body(a);
+  if(!engulf)return{pattern:"NONE",bias:0};
+  if(bearish(a)&&bullish(b))return{pattern:"BULLISH_ENGULFING",bias:1};
   if(bullish(a)&&bearish(b))return{pattern:"BEARISH_ENGULFING",bias:-1};
-  if(bearish(a)&&bullish(b)&&bHigh>=aHigh&&bLow<=aLow&&body(b)>=body(a))
-    return{pattern:"BULLISH_ENGULFING",bias:1};
-  if(bullish(a)&&bearish(b)&&bHigh>=aHigh&&bLow<=aLow&&body(b)>=body(a))
-    return{pattern:"BEARISH_ENGULFING",bias:-1};
   return{pattern:"NONE",bias:0};
 }
