@@ -155,5 +155,4 @@ console.log(JSON.stringify({
 
 fs.mkdirSync("artifacts",{recursive:true});
 fs.writeFileSync("artifacts/backtest-pips.json",JSON.stringify({configuration:{pipSize:PIP_SIZE,pipDefinition:"1 pip = 0.01 XAU/USD price move",rMultiple:R_MULTIPLE},trades},null,2));
-fs.writeFileSync("artifacts/backtest-pips.csv",["time,signal,confidence,pattern,outcome,entry,exitPrice,stopLoss,tp1,tp2,tp3,pips,rMultiple",...trades.map(t=>[t.time,t.signal,t.confidence,t.pattern,t.outcome,t.entry,t.exitPrice,t.stopLoss,t.takeProfits[0],t.takeProfits[1],t.takeProfits[2],t.pips,t.rMultiple].join(","))].join("
 fs.writeFileSync("artifacts/backtest-pips.csv",["time,signal,confidence,pattern,outcome,entry,exitPrice,stopLoss,tp1,tp2,tp3,pips,rMultiple",...trades.map(t=>[t.time,t.signal,t.confidence,t.pattern,t.outcome,t.entry,t.exitPrice,t.stopLoss,t.takeProfits[0],t.takeProfits[1],t.takeProfits[2],t.pips,t.rMultiple].join(","))].join("\n"));
