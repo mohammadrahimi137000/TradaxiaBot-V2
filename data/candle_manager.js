@@ -1,18 +1,2 @@
-// TradaxiaBot V2 - Candle Manager
-
-export class CandleManager {
-  normalize(candle) {
-    return {
-      time: candle.time,
-      open: Number(candle.open),
-      high: Number(candle.high),
-      low: Number(candle.low),
-      close: Number(candle.close),
-      volume: Number(candle.volume || 0)
-    };
-  }
-
-  last(candles = []) {
-    return candles[candles.length - 1] || null;
-  }
-}
+export function normalizeCandle(c){const time=typeof c.datetime==="string"?Date.parse(c.datetime):Number(c.time??c.timestamp);return {time:Number.isFinite(time)?time:0,open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close),volume:Number(c.volume??0)}}
+export function normalizeCandles(c){return c.map(normalizeCandle).filter(x=>x.time&&[x.open,x.high,x.low,x.close].every(Number.isFinite)).sort((a,b)=>a.time-b.time)}

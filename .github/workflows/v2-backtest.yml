@@ -1,0 +1,20 @@
+name: V2 Public XAUUSD Backtest
+
+on:
+  push:
+    branches: ["v2-professional","v2-winrate-iteration-1","v2-backtest-rigorous"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run backtest
+        run: node scripts/run_public_backtest.mjs
