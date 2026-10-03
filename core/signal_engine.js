@@ -1,16 +1,2 @@
-// TradaxiaBot V2 - Signal Engine
-// Builds the final trading signal from analysis modules.
-
-export class SignalEngine {
-  create({ symbol = "XAU/USD", direction = "WAIT", confidence = 0, entry = null, stopLoss = null, takeProfit = null }) {
-    return {
-      symbol,
-      direction,
-      confidence,
-      entry,
-      stopLoss,
-      takeProfit,
-      createdAt: new Date().toISOString()
-    };
-  }
-}
+export function createSignal({market,decision,risk}){return{symbol:"XAU/USD",signal:decision.signal,strength:decision.confidence,entry:risk.entry,stopLoss:risk.stopLoss,takeProfits:risk.takeProfits,reasons:decision.reasons,generatedAt:new Date().toISOString()}}
+export function formatPersianSignal(s){const d=s.signal==="BUY"?"خرید":s.signal==="SELL"?"فروش":"صبر";return "🟡 طلا\n\nسیگنال: "+d+"\nقدرت سیگنال: "+s.strength+"%"}
