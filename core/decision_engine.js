@@ -168,8 +168,10 @@ export function makeDecision(market, options = {}) {
   };
 
   const pSide=patternSide();
+  const levelState=m15.levels??{};
+  const levelBlocked=signal==="BUY"?!!levelState.blocked?.buy:!!levelState.blocked?.sell;
   const patternEnabled=cfg.useCandles||cfg.useStructurePatterns||cfg.useSMC||cfg.useClassical;
-  const diagnostics={valid:true,best,gap,atrPct,rsi:m15.rsi??50,alignedHTF,aligned15,m5NotOppose,rsiOK,volatilityOK,patternSide:pSide,frames:frameDiag,config:cfg};
+  const diagnostics={valid:true,best,gap,atrPct,rsi:m15.rsi??50,alignedHTF,aligned15,m5NotOppose,rsiOK,volatilityOK,patternSide:pSide,levelBlocked,levels:m15.levels?.supportResistanceIndicator??null,frames:frameDiag,config:cfg};
 
   if(best<cfg.minBest||gap<cfg.minGap)
     return{signal:"WAIT",confidence:Math.round(Math.min(100,best)),reasons:["قدرت یا اختلاف سیگنال کافی نیست"],diagnostics};
@@ -177,6 +179,8 @@ export function makeDecision(market, options = {}) {
     return{signal:"WAIT",confidence:Math.round(Math.min(100,best)),reasons:["فیلتر ورود اجازه معامله نمی‌دهد"],diagnostics};
   if(patternEnabled&&pSide&&pSide!==signal.toLowerCase())
     return{signal:"WAIT",confidence:Math.round(Math.min(100,best)),reasons:["الگوهای قیمت با جهت اصلی هم‌جهت نیستند"],diagnostics};
+  if(levelBlocked)
+    return{signal:"WAIT",confidence:Math.round(Math.min(100,best)),reasons:[signal==="BUY"?"مقاومت معتبر نزدیک قیمت":"حمایت معتبر نزدیک قیمت"],diagnostics};
 
   const confidence=Math.round(Math.min(98,best+Math.min(12,gap/2)));
   reasons.push("هم‌جهتی تایم‌فریم‌ها");
@@ -185,6 +189,7 @@ export function makeDecision(market, options = {}) {
   if(cfg.useOscillators)reasons.push("بولینگر و استوکاستیک بررسی شدند");
   if(cfg.useADX)reasons.push("قدرت روند با ADX بررسی شد");
   if(patternEnabled)reasons.push("الگوهای قیمت و ساختار بررسی شدند");
+  reasons.push("سطوح مهم و واکنش قیمت بررسی شد");
   reasons.push("فیلتر نوسان و RSI تأیید شد");
   return{signal,confidence,reasons,diagnostics};
 }
