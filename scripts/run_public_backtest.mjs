@@ -107,7 +107,13 @@ for(let i=80;i+horizon<primary.length;i+=step){
   const risk=calculateRisk(decision,market);
   if(!risk.active) continue;
   const outcome=evaluateTrade(decision,risk,primary.slice(i+1,i+1+horizon));
-  trades.push({time:t,signal:decision.signal,confidence:decision.confidence,outcome});
+  trades.push({
+    time:t,
+    signal:decision.signal,
+    confidence:decision.confidence,
+    outcome,
+    diagnostics:decision.diagnostics??{}
+  });
 }
 
 const count=x=>trades.filter(t=>t.outcome===x).length;
@@ -117,7 +123,22 @@ const resolved=trades.filter(t=>["TP1","TP2","TP3","SL","TIMEOUT"].includes(t.ou
 const conservativeLosses=trades.filter(t=>t.outcome==="SL"||t.outcome==="AMBIGUOUS").length;
 const buys=trades.filter(t=>t.signal==="BUY");
 const sells=trades.filter(t=>t.signal==="SELL");
-const by=(xs,x)=>({total:xs.length,wins:xs.filter(t=>t.outcome.startsWith("TP")).length,sl:xs.filter(t=>t.outcome==="SL").length,winRate:xs.length?Math.round(xs.filter(t=>t.outcome.startsWith("TP")).length/xs.length*10000)/100:0});
+const by=(xs)=>({
+  total:xs.length,
+  wins:xs.filter(t=>t.outcome.startsWith("TP")).length,
+  sl:xs.filter(t=>t.outcome==="SL").length,
+  ambiguous:xs.filter(t=>t.outcome==="AMBIGUOUS").length,
+  winRate:xs.length?Math.round(xs.filter(t=>t.outcome.startsWith("TP")).length/xs.length*10000)/100:0
+});
+const band=(xs,lo,hi)=>by(xs.filter(t=>t.confidence>=lo&&t.confidence<=hi));
+const diagnosticSummary=(xs)=>({
+  confidence:{lt80:band(xs,0,79),c80_89:band(xs,80,89),c90plus:band(xs,90,100)},
+  rsi:{
+    low:by(xs.filter(t=>(t.diagnostics.rsi??50)<40)),
+    mid:by(xs.filter(t=>(t.diagnostics.rsi??50)>=40&&(t.diagnostics.rsi??50)<60)),
+    high:by(xs.filter(t=>(t.diagnostics.rsi??50)>=60))
+  }
+});
 
 console.log(JSON.stringify({
   dataset:{source:DATA_URL,rows:m5.length,start:new Date(m5[0].time).toISOString(),end:new Date(m5.at(-1).time).toISOString()},
@@ -137,7 +158,8 @@ console.log(JSON.stringify({
     tp2HitRate:trades.length?Math.round(trades.filter(t=>["TP2","TP3"].includes(t.outcome)).length/trades.length*10000)/100:0,
     tp3HitRate:trades.length?Math.round(count("TP3")/trades.length*10000)/100:0
   },
-  byDirection:{BUY:by(buys),SELL:by(sells)}
+  byDirection:{BUY:by(buys),SELL:by(sells)},
+    diagnostics:{BUY:diagnosticSummary(buys),SELL:diagnosticSummary(sells)}
 
 },null,2));
 
