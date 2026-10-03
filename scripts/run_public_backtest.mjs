@@ -5,7 +5,8 @@ import { calculateRisk } from "../core/risk_engine.js";
 const DATA_URL="https://raw.githubusercontent.com/getdata-finance/xauusd-5m-ohlcv-metals-historical-data/main/XAUUSD_5m.csv";
 
 function parseCsv(text){
-  const lines=text.trim().split(/\r?\n/);
+  const lines=text.trim().split(/\r?
+/);
   const out=[];
   for(let i=1;i<lines.length;i++){
     const p=lines[i].split(",");
@@ -82,7 +83,9 @@ const multi={
   "30min":resample(m5,30),
   "1h":resample(m5,60)
 };
-const primary=multi["15min"];\nconst startDate=process.env.START_DATE?Date.parse(process.env.START_DATE):null;\nconst endDate=process.env.END_DATE?Date.parse(process.env.END_DATE):null;
+const primary=multi["15min"];
+const startDate=process.env.START_DATE?Date.parse(process.env.START_DATE):null;
+const endDate=process.env.END_DATE?Date.parse(process.env.END_DATE):null;
 const step=4;
 const horizon=20;
 const trades=[];
