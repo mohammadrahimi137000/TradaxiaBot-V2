@@ -3,6 +3,12 @@ name: Pin Bar Ablation V2
 on:
   push:
     branches: ["v2-pinbar-ablation-v2"]
+  pull_request:
+    branches: ["v2-professional"]
+    paths:
+      - "scripts/run_pinbar_ablation_v2.mjs"
+      - "core/**"
+      - ".github/workflows/pinbar-ablation-v2.yml"
   workflow_dispatch:
 
 permissions:
