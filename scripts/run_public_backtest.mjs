@@ -106,8 +106,10 @@ for(let i=80;i+horizon<primary.length;i+=step){
   if(!risk.active) continue;
   const result=evaluateTrade(decision,risk,primary.slice(i+1,i+1+horizon));
   const pattern=market.frames["15min"]?.candlestick?.pattern??"NONE";
-  const pinBar=market.frames["15min"]?.pinBar?.pattern??"NONE";
-  trades.push({time:t,signal:decision.signal,confidence:decision.confidence,pattern,pinBar,...result});
+  const pinBarInfo=market.frames["15min"]?.pinBar;
+  const pinBar=pinBarInfo?.pattern??"NONE";
+  const pinBarConfirmed=pinBarInfo?.confirmed===true;
+  trades.push({time:t,signal:decision.signal,confidence:decision.confidence,pattern,pinBar,pinBarConfirmed,...result});
 }
 
 const count=x=>trades.filter(t=>t.outcome===x).length;
@@ -122,7 +124,7 @@ const wins=trades.filter(t=>t.outcome.startsWith("TP")).length;
 const buys=trades.filter(t=>t.signal==="BUY");
 const sells=trades.filter(t=>t.signal==="SELL");
 const patternTrades=trades.filter(t=>t.pattern!=="NONE");
-const pinBarTrades=trades.filter(t=>t.pinBar!=="NONE");
+const pinBarTrades=trades.filter(t=>t.pinBar!=="NONE"&&t.pinBarConfirmed===true);
 const pinBarAligned=pinBarTrades.filter(t=>(t.pinBar==="BULLISH_PIN_BAR"&&t.signal==="BUY")||(t.pinBar==="BEARISH_PIN_BAR"&&t.signal==="SELL"));
 const patternAligned=patternTrades.filter(t=>(t.pattern==="BULLISH_ENGULFING"&&t.signal==="BUY")||(t.pattern==="BEARISH_ENGULFING"&&t.signal==="SELL"));
 const patternOutcomes=xs=>({total:xs.length,wins:xs.filter(t=>t.outcome.startsWith("TP")).length,sl:xs.filter(t=>t.outcome==="SL").length,winRate:xs.length?Math.round(xs.filter(t=>t.outcome.startsWith("TP")).length/xs.length*10000)/100:0,netR:Number(xs.reduce((s,t)=>s+t.rMultiple,0).toFixed(4)),avgR:xs.length?Number((xs.reduce((s,t)=>s+t.rMultiple,0)/xs.length).toFixed(4)):0});
