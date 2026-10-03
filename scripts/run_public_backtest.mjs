@@ -56,17 +56,21 @@ function evaluateTrade(d,r,future){
   const tp=r.takeProfits.map(x=>x.price);
   let hit=0,outcome="TIMEOUT";
   for(const c of future){
-    if(d.signal==="BUY"){
-      if(c.low<=r.stopLoss){outcome="SL";break}
-      if(c.high>=tp[2]){outcome="TP3";break}
-      if(c.high>=tp[1]) hit=Math.max(hit,2);
-      if(c.high>=tp[0]) hit=Math.max(hit,1);
-    }else{
-      if(c.high>=r.stopLoss){outcome="SL";break}
-      if(c.low<=tp[2]){outcome="TP3";break}
-      if(c.low<=tp[1]) hit=Math.max(hit,2);
-      if(c.low<=tp[0]) hit=Math.max(hit,1);
+    const stopHit=d.signal==="BUY"?c.low<=r.stopLoss:c.high>=r.stopLoss;
+    const tp3Hit=d.signal==="BUY"?c.high>=tp[2]:c.low<=tp[2];
+    const tp2Hit=d.signal==="BUY"?c.high>=tp[1]:c.low<=tp[1];
+    const tp1Hit=d.signal==="BUY"?c.high>=tp[0]:c.low<=tp[0];
+
+    // If SL and TP are both touched inside the same OHLC candle, the
+    // intrabar order is unknowable from 5m data. Mark it explicitly and
+    // count it conservatively as SL in the summary.
+    if(stopHit && (tp1Hit||tp2Hit||tp3Hit)){
+      return "AMBIGUOUS";
     }
+    if(stopHit){outcome="SL";break}
+    if(tp3Hit){outcome="TP3";break}
+    if(tp2Hit) hit=Math.max(hit,2);
+    if(tp1Hit) hit=Math.max(hit,1);
   }
   if(outcome==="TIMEOUT"&&hit) outcome="TP"+hit;
   return outcome;
@@ -90,6 +94,8 @@ const horizon=20;
 const trades=[];
 for(let i=80;i+horizon<primary.length;i+=step){
   const t=primary[i].time;
+  if(startDate&&t<startDate) continue;
+  if(endDate&&t>endDate) break;
   const snapshot={
     "1h":snapshotAt(multi["1h"],t),
     "30min":snapshotAt(multi["30min"],t),
@@ -106,6 +112,9 @@ for(let i=80;i+horizon<primary.length;i+=step){
 
 const count=x=>trades.filter(t=>t.outcome===x).length;
 const wins=trades.filter(t=>t.outcome.startsWith("TP")).length;
+const ambiguous=count("AMBIGUOUS");
+const resolved=trades.filter(t=>["TP1","TP2","TP3","SL","TIMEOUT"].includes(t.outcome));
+const conservativeLosses=trades.filter(t=>t.outcome==="SL"||t.outcome==="AMBIGUOUS").length;
 const buys=trades.filter(t=>t.signal==="BUY");
 const sells=trades.filter(t=>t.signal==="SELL");
 const by=(xs,x)=>({total:xs.length,wins:xs.filter(t=>t.outcome.startsWith("TP")).length,sl:xs.filter(t=>t.outcome==="SL").length,winRate:xs.length?Math.round(xs.filter(t=>t.outcome.startsWith("TP")).length/xs.length*10000)/100:0});
@@ -118,13 +127,18 @@ console.log(JSON.stringify({
     wins,
     sl:count("SL"),
     timeout:count("TIMEOUT"),
-    winRate:trades.length?Math.round(wins/trades.length*10000)/100:0,
+    winRate:resolved.length?Math.round(wins/resolved.length*10000)/100:0,
+    rawWinRate:trades.length?Math.round(wins/trades.length*10000)/100:0,
+    resolvedSignals:resolved.length,
+    ambiguous,
+    conservativeLosses,
     tp1:count("TP1"),tp2:count("TP2"),tp3:count("TP3"),
     tp1HitRate:trades.length?Math.round(trades.filter(t=>["TP1","TP2","TP3"].includes(t.outcome)).length/trades.length*10000)/100:0,
     tp2HitRate:trades.length?Math.round(trades.filter(t=>["TP2","TP3"].includes(t.outcome)).length/trades.length*10000)/100:0,
     tp3HitRate:trades.length?Math.round(count("TP3")/trades.length*10000)/100:0
   },
   byDirection:{BUY:by(buys),SELL:by(sells)}
+
 },null,2));
 
 // CI validation checkpoint
