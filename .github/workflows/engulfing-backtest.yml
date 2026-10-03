@@ -1,0 +1,25 @@
+name: Engulfing Backtest
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - v2-candlestick-engulfing
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run public backtest
+        run: node scripts/run_public_backtest.mjs
+      - name: Upload backtest artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: engulfing-backtest
+          path: artifacts/
+
+# workflow validation trigger

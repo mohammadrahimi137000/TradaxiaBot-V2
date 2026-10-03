@@ -1,6 +1,7 @@
 import { analyzeMarket } from "../core/market_engine.js";
 import { makeDecision } from "../core/decision_engine.js";
 import { calculateRisk } from "../core/risk_engine.js";
+import fs from "node:fs";
 
 const DATA_URL="https://raw.githubusercontent.com/getdata-finance/xauusd-5m-ohlcv-metals-historical-data/main/XAUUSD_5m.csv";
 
@@ -52,24 +53,29 @@ function snapshotAt(arr,t){
   return arr.slice(Math.max(0,n-500),n);
 }
 
+const PIP_SIZE=0.01; // XAU/USD: 0.01 price move = 1 pip
+const R_MULTIPLE={SL:-1,TP1:0.8,TP2:1.5,TP3:2.3,TIMEOUT:0};
+
 function evaluateTrade(d,r,future){
   const tp=r.takeProfits.map(x=>x.price);
-  let hit=0,outcome="TIMEOUT";
+  let hit=0,outcome="TIMEOUT",exitPrice=null;
   for(const c of future){
     if(d.signal==="BUY"){
-      if(c.low<=r.stopLoss){outcome="SL";break}
-      if(c.high>=tp[2]){outcome="TP3";break}
+      if(c.low<=r.stopLoss){outcome="SL";exitPrice=r.stopLoss;break}
+      if(c.high>=tp[2]){outcome="TP3";exitPrice=tp[2];break}
       if(c.high>=tp[1]) hit=Math.max(hit,2);
       if(c.high>=tp[0]) hit=Math.max(hit,1);
     }else{
-      if(c.high>=r.stopLoss){outcome="SL";break}
-      if(c.low<=tp[2]){outcome="TP3";break}
+      if(c.high>=r.stopLoss){outcome="SL";exitPrice=r.stopLoss;break}
+      if(c.low<=tp[2]){outcome="TP3";exitPrice=tp[2];break}
       if(c.low<=tp[1]) hit=Math.max(hit,2);
       if(c.low<=tp[0]) hit=Math.max(hit,1);
     }
   }
-  if(outcome==="TIMEOUT"&&hit) outcome="TP"+hit;
-  return outcome;
+  if(outcome==="TIMEOUT"&&hit) { outcome="TP"+hit; exitPrice=tp[hit-1]; }
+  const pipDelta=exitPrice==null?0:(d.signal==="BUY"?(exitPrice-r.entry):(r.entry-exitPrice))/PIP_SIZE;
+  const rMultiple=R_MULTIPLE[outcome]??0;
+  return {outcome,exitPrice,pips:Number(pipDelta.toFixed(2)),rMultiple,entry:r.entry,stopLoss:r.stopLoss,takeProfits:tp};
 }
 
 const res=await fetch(DATA_URL);
@@ -98,14 +104,30 @@ for(let i=80;i+horizon<primary.length;i+=step){
   const decision=makeDecision(market);
   const risk=calculateRisk(decision,market);
   if(!risk.active) continue;
-  const outcome=evaluateTrade(decision,risk,primary.slice(i+1,i+1+horizon));
-  trades.push({time:t,signal:decision.signal,confidence:decision.confidence,outcome});
+  const result=evaluateTrade(decision,risk,primary.slice(i+1,i+1+horizon));
+  const pattern=market.frames["15min"]?.candlestick?.pattern??"NONE";
+  const pinBarInfo=market.frames["15min"]?.pinBar;
+  const pinBar=pinBarInfo?.pattern??"NONE";
+  const pinBarConfirmed=pinBarInfo?.confirmed===true;
+  trades.push({time:t,signal:decision.signal,confidence:decision.confidence,pattern,pinBar,pinBarConfirmed,...result});
 }
 
 const count=x=>trades.filter(t=>t.outcome===x).length;
+const profitPips=trades.filter(t=>t.pips>0).reduce((s,t)=>s+t.pips,0);
+const lossPips=Math.abs(trades.filter(t=>t.pips<0).reduce((s,t)=>s+t.pips,0));
+const netPips=profitPips-lossPips;
+const grossR=trades.reduce((s,t)=>s+t.rMultiple,0);
+const winsR=trades.filter(t=>t.rMultiple>0).reduce((s,t)=>s+t.rMultiple,0);
+const lossesR=Math.abs(trades.filter(t=>t.rMultiple<0).reduce((s,t)=>s+t.rMultiple,0));
+const avgR=trades.length?grossR/trades.length:0;
 const wins=trades.filter(t=>t.outcome.startsWith("TP")).length;
 const buys=trades.filter(t=>t.signal==="BUY");
 const sells=trades.filter(t=>t.signal==="SELL");
+const patternTrades=trades.filter(t=>t.pattern!=="NONE");
+const pinBarTrades=trades.filter(t=>t.pinBar!=="NONE"&&t.pinBarConfirmed===true);
+const pinBarAligned=pinBarTrades.filter(t=>(t.pinBar==="BULLISH_PIN_BAR"&&t.signal==="BUY")||(t.pinBar==="BEARISH_PIN_BAR"&&t.signal==="SELL"));
+const patternAligned=patternTrades.filter(t=>(t.pattern==="BULLISH_ENGULFING"&&t.signal==="BUY")||(t.pattern==="BEARISH_ENGULFING"&&t.signal==="SELL"));
+const patternOutcomes=xs=>({total:xs.length,wins:xs.filter(t=>t.outcome.startsWith("TP")).length,sl:xs.filter(t=>t.outcome==="SL").length,winRate:xs.length?Math.round(xs.filter(t=>t.outcome.startsWith("TP")).length/xs.length*10000)/100:0,netR:Number(xs.reduce((s,t)=>s+t.rMultiple,0).toFixed(4)),avgR:xs.length?Number((xs.reduce((s,t)=>s+t.rMultiple,0)/xs.length).toFixed(4)):0});
 const by=(xs,x)=>({total:xs.length,wins:xs.filter(t=>t.outcome.startsWith("TP")).length,sl:xs.filter(t=>t.outcome==="SL").length,winRate:xs.length?Math.round(xs.filter(t=>t.outcome.startsWith("TP")).length/xs.length*10000)/100:0});
 
 console.log(JSON.stringify({
@@ -120,7 +142,23 @@ console.log(JSON.stringify({
     tp1:count("TP1"),tp2:count("TP2"),tp3:count("TP3"),
     tp1HitRate:trades.length?Math.round(trades.filter(t=>["TP1","TP2","TP3"].includes(t.outcome)).length/trades.length*10000)/100:0,
     tp2HitRate:trades.length?Math.round(trades.filter(t=>["TP2","TP3"].includes(t.outcome)).length/trades.length*10000)/100:0,
-    tp3HitRate:trades.length?Math.round(count("TP3")/trades.length*10000)/100:0
+    tp3HitRate:trades.length?Math.round(count("TP3")/trades.length*10000)/100:0,
+    profitPips:Number(profitPips.toFixed(2)),
+    lossPips:Number(lossPips.toFixed(2)),
+    netPips:Number(netPips.toFixed(2)),
+    avgPipsPerTrade:trades.length?Number((netPips/trades.length).toFixed(2)):0,
+    grossR:Number(grossR.toFixed(4)),
+    positiveR:Number(winsR.toFixed(4)),
+    negativeR:Number(lossesR.toFixed(4)),
+    netR:Number(grossR.toFixed(4)),
+    avgRPerTrade:Number(avgR.toFixed(4)),
+    expectancyR:Number(avgR.toFixed(4))
   },
-  byDirection:{BUY:by(buys),SELL:by(sells)}
+  byDirection:{BUY:by(buys),SELL:by(sells)},
+    engulfing:{detectedTrades:patternTrades.length,alignedSignals:patternAligned.length,contrarySignals:patternTrades.length-patternAligned.length,all:patternOutcomes(patternTrades),aligned:patternOutcomes(patternAligned)},
+    pinBar:{detectedTrades:pinBarTrades.length,alignedSignals:pinBarAligned.length,contrarySignals:pinBarTrades.length-pinBarAligned.length,all:patternOutcomes(pinBarTrades),aligned:patternOutcomes(pinBarAligned)}
 },null,2));
+
+fs.mkdirSync("artifacts",{recursive:true});
+fs.writeFileSync("artifacts/backtest-pips.json",JSON.stringify({configuration:{pipSize:PIP_SIZE,pipDefinition:"1 pip = 0.01 XAU/USD price move",rMultiple:R_MULTIPLE},trades},null,2));
+fs.writeFileSync("artifacts/backtest-pips.csv",["time,signal,confidence,pattern,pinBar,outcome,entry,exitPrice,stopLoss,tp1,tp2,tp3,pips,rMultiple",...trades.map(t=>[t.time,t.signal,t.confidence,t.pattern,t.pinBar,t.outcome,t.entry,t.exitPrice,t.stopLoss,t.takeProfits[0],t.takeProfits[1],t.takeProfits[2],t.pips,t.rMultiple].join(","))].join("\n"));
