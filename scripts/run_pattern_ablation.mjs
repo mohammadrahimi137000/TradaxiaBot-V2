@@ -44,17 +44,17 @@ function evaluateTrade(d,r,future){
   return outcome;
 }
 const configs={
-  baseline:{useMA:false,useIchimoku:false,useOscillators:false,useADX:false,useCandles:false,useStructurePatterns:false,useSMC:false,useClassical:false,minBest:72,minGap:18},
-  ma:{useMA:true,useIchimoku:false,useOscillators:false,useADX:false,useCandles:false,useStructurePatterns:false,useSMC:false,useClassical:false,minBest:72,minGap:18},
-  ichimoku:{useMA:false,useIchimoku:true,useOscillators:false,useADX:false,useCandles:false,useStructurePatterns:false,useSMC:false,useClassical:false,minBest:72,minGap:18},
-  oscillators:{useMA:false,useIchimoku:false,useOscillators:true,useADX:false,useCandles:false,useStructurePatterns:false,useSMC:false,useClassical:false,minBest:72,minGap:18},
-  adx:{useMA:false,useIchimoku:false,useOscillators:false,useADX:true,useCandles:false,useStructurePatterns:false,useSMC:false,useClassical:false,minBest:72,minGap:18},
-  candles:{useMA:false,useIchimoku:false,useOscillators:false,useADX:false,useCandles:true,useStructurePatterns:false,useSMC:false,useClassical:false,minBest:72,minGap:18},
-  structure:{useMA:false,useIchimoku:false,useOscillators:false,useADX:false,useCandles:false,useStructurePatterns:true,useSMC:false,useClassical:false,minBest:72,minGap:18},
-  smc:{useMA:false,useIchimoku:false,useOscillators:false,useADX:false,useCandles:false,useStructurePatterns:false,useSMC:true,useClassical:false,minBest:72,minGap:18},
-  classical:{useMA:false,useIchimoku:false,useOscillators:false,useADX:false,useCandles:false,useStructurePatterns:false,useSMC:false,useClassical:true,minBest:72,minGap:18},
-  ma_ichimoku:{useMA:true,useIchimoku:true,useOscillators:false,useADX:false,useCandles:false,useStructurePatterns:false,useSMC:false,useClassical:false,minBest:72,minGap:18},
-  all:{useMA:true,useIchimoku:true,useOscillators:true,useADX:true,useCandles:true,useStructurePatterns:true,useSMC:true,useClassical:true,minBest:90,minGap:20}
+  baseline:{useMA:false,useIchimoku:false,useOscillators:false,useADX:false,useCandles:false,useStructurePatterns:false,useSMC:false,useClassical:false,minBest:0,minGap:0},
+  ma:{useMA:true,useIchimoku:false,useOscillators:false,useADX:false,useCandles:false,useStructurePatterns:false,useSMC:false,useClassical:false,minBest:0,minGap:0},
+  ichimoku:{useMA:false,useIchimoku:true,useOscillators:false,useADX:false,useCandles:false,useStructurePatterns:false,useSMC:false,useClassical:false,minBest:0,minGap:0},
+  oscillators:{useMA:false,useIchimoku:false,useOscillators:true,useADX:false,useCandles:false,useStructurePatterns:false,useSMC:false,useClassical:false,minBest:0,minGap:0},
+  adx:{useMA:false,useIchimoku:false,useOscillators:false,useADX:true,useCandles:false,useStructurePatterns:false,useSMC:false,useClassical:false,minBest:0,minGap:0},
+  candles:{useMA:false,useIchimoku:false,useOscillators:false,useADX:false,useCandles:true,useStructurePatterns:false,useSMC:false,useClassical:false,minBest:0,minGap:0},
+  structure:{useMA:false,useIchimoku:false,useOscillators:false,useADX:false,useCandles:false,useStructurePatterns:true,useSMC:false,useClassical:false,minBest:0,minGap:0},
+  smc:{useMA:false,useIchimoku:false,useOscillators:false,useADX:false,useCandles:false,useStructurePatterns:false,useSMC:true,useClassical:false,minBest:0,minGap:0},
+  classical:{useMA:false,useIchimoku:false,useOscillators:false,useADX:false,useCandles:false,useStructurePatterns:false,useSMC:false,useClassical:true,minBest:0,minGap:0},
+  ma_ichimoku:{useMA:true,useIchimoku:true,useOscillators:false,useADX:false,useCandles:false,useStructurePatterns:false,useSMC:false,useClassical:false,minBest:0,minGap:0},
+  all:{useMA:true,useIchimoku:true,useOscillators:true,useADX:true,useCandles:true,useStructurePatterns:true,useSMC:true,useClassical:true,minBest:0,minGap:0}
 };
 
 const res=await fetch(DATA_URL);if(!res.ok)throw new Error("data_http_"+res.status);
