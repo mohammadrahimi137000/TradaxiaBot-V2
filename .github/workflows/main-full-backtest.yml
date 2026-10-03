@@ -1,1 +1,15 @@
-name: Main Full Backtest\n\non:\n  push:\n    branches: ["tmp/main-full-backtest-20261003"]\n\npermissions:\n  contents: read\n\njobs:\n  backtest:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: node scripts/main_full_backtest.mjs\n
+name: Main Full Backtest
+
+on:
+  push:
+    branches: ["tmp/main-full-backtest-20261003"]
+
+permissions:
+  contents: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/main_full_backtest.mjs
