@@ -1,11 +1,1 @@
-// TradaxiaBot V2 - XAUUSD Strategy
-// Dedicated strategy layer for Gold analysis.
-
-export function analyzeXAUUSD(market) {
-  return {
-    symbol: "XAU/USD",
-    direction: "WAIT",
-    confidence: 0,
-    reason: "Strategy engine initialized"
-  };
-}
+export function analyzeXAUUSD(market,decision,risk){return{symbol:"XAU/USD",signal:decision.signal,strength:decision.confidence,entry:risk.entry,stopLoss:risk.stopLoss,takeProfits:risk.takeProfits,valid:market.valid}}

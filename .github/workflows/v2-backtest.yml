@@ -1,0 +1,25 @@
+name: V2 Public XAUUSD Backtest
+
+on:
+  push:
+    branches: ["v2-professional", "v2-levels-baseline", "v2-rmultiple-test"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run backtest
+        run: node scripts/run_public_backtest.mjs
+      - name: Upload pip report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-pips
+          path: artifacts/

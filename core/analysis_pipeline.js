@@ -1,0 +1,2 @@
+import{getMultiTimeframe}from "../data/price_provider.js";import{analyzeMarket}from "./market_engine.js";import{makeDecision}from "./decision_engine.js";import{calculateRisk}from "./risk_engine.js";import{createSignal}from "./signal_engine.js";
+export async function runLiveAnalysis(env){const candles=await getMultiTimeframe(env);const market=analyzeMarket(candles),decision=makeDecision(market),risk=calculateRisk(decision,market);return createSignal({market,decision,risk})}
