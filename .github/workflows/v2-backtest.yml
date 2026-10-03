@@ -4,7 +4,7 @@ on:
   push:
     branches: ["v2-professional", "v2-levels-baseline", "v2-rmultiple-test"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "tmp/v2-backtest-base-20261003"]
   workflow_dispatch:
 
 permissions:
