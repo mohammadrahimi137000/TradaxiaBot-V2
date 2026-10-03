@@ -6,7 +6,6 @@ import fs from "node:fs";
 const DATA_URL="https://raw.githubusercontent.com/getdata-finance/xauusd-5m-ohlcv-metals-historical-data/main/XAUUSD_5m.csv";
 
   const lines=text.trim().split(/\r?\n/);
-  const lines=text.trim().split(/\\r?\\n/);
   const out=[];
   for(let i=1;i<lines.length;i++){
     const p=lines[i].split(",");
