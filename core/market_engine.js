@@ -1,7 +1,7 @@
 import {closes,ema,rsi,atr,macd,highest,lowest} from "./indicators.js";
 import {detectKeyLevels} from "./levels.js";
 import {detectEngulfing,detectPinBar} from "./candlestick_patterns.js";
-export function validateCandles(c,min=60){if(!Array.isArray(c)||c.length<min)return{ok:false,reason:"insufficient_candles"};for(let i=0;i<c.length;i++){const x=c[i];if(![x.open,x.high,x.low,x.close].every(Number.isFinite))return{ok:false,reason:"invalid_candle"};if(x.high<Math.max(x.open,x.close)||x.low>Math.min(x.open,x.close)||x.high<x.low)return{ok:false,reason:"invalid_ohlc"}if(i&&x.time<c[i-1].time)return{ok:false,reason:"unsorted_candles"}}return{ok:true}}
+export function validateCandles(c,min=60){if(!Array.isArray(c)||c.length<min)return{ok:false,reason:"insufficient_candles"};for(let i=0;i<c.length;i++){const x=c[i];if(![x.open,x.high,x.low,x.close].every(Number.isFinite))return{ok:false,reason:"invalid_candle"};if(x.high<Math.max(x.open,x.close)||x.low>Math.min(x.open,x.close)||x.high<x.low)return{ok:false,reason:"invalid_ohlc"};if(i&&x.time<c[i-1].time)return{ok:false,reason:"unsorted_candles"}}return{ok:true}}
 function structure(c){const r=c.slice(-30),h=Math.floor(r.length/2),a=r.slice(0,h),b=r.slice(h),ah=Math.max(...a.map(x=>x.high)),bh=Math.max(...b.map(x=>x.high)),al=Math.min(...a.map(x=>x.low)),bl=Math.min(...b.map(x=>x.low));return bh>ah&&bl>al?"bullish":bh<ah&&bl<al?"bearish":"range"}
 export function analyzeTimeframe(c,timeframe){
   const v=validateCandles(c);if(!v.ok)return{timeframe,valid:false,reason:v.reason};
