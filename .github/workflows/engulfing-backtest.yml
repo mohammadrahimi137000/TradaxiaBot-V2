@@ -21,3 +21,5 @@ jobs:
         with:
           name: engulfing-backtest
           path: artifacts/
+
+# workflow validation trigger
