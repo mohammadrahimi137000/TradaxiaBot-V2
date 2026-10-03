@@ -105,7 +105,7 @@ for(let i=80;i+horizon<primary.length;i+=step){
   const risk=calculateRisk(decision,market);
   if(!risk.active) continue;
   const result=evaluateTrade(decision,risk,primary.slice(i+1,i+1+horizon));
-  trades.push({time:t,signal:decision.signal,confidence:decision.confidence,...result});
+  const pattern=market.frames["15min"]?.candlestick?.pattern??"NONE";\n  trades.push({time:t,signal:decision.signal,confidence:decision.confidence,pattern,...result});
 }
 
 const count=x=>trades.filter(t=>t.outcome===x).length;
@@ -118,7 +118,7 @@ const lossesR=Math.abs(trades.filter(t=>t.rMultiple<0).reduce((s,t)=>s+t.rMultip
 const avgR=trades.length?grossR/trades.length:0;
 const wins=trades.filter(t=>t.outcome.startsWith("TP")).length;
 const buys=trades.filter(t=>t.signal==="BUY");
-const sells=trades.filter(t=>t.signal==="SELL");
+const sells=trades.filter(t=>t.signal==="SELL");\nconst patternTrades=trades.filter(t=>t.pattern!=="NONE");\nconst patternAligned=patternTrades.filter(t=>(t.pattern==="BULLISH_ENGULFING"&&t.signal==="BUY")||(t.pattern==="BEARISH_ENGULFING"&&t.signal==="SELL"));\nconst patternOutcomes=xs=>({total:xs.length,wins:xs.filter(t=>t.outcome.startsWith("TP")).length,sl:xs.filter(t=>t.outcome==="SL").length,winRate:xs.length?Math.round(xs.filter(t=>t.outcome.startsWith("TP")).length/xs.length*10000)/100:0,netR:Number(xs.reduce((s,t)=>s+t.rMultiple,0).toFixed(4)),avgR:xs.length?Number((xs.reduce((s,t)=>s+t.rMultiple,0)/xs.length).toFixed(4)):0});
 const by=(xs,x)=>({total:xs.length,wins:xs.filter(t=>t.outcome.startsWith("TP")).length,sl:xs.filter(t=>t.outcome==="SL").length,winRate:xs.length?Math.round(xs.filter(t=>t.outcome.startsWith("TP")).length/xs.length*10000)/100:0});
 
 console.log(JSON.stringify({
@@ -145,9 +145,9 @@ console.log(JSON.stringify({
     avgRPerTrade:Number(avgR.toFixed(4)),
     expectancyR:Number(avgR.toFixed(4))
   },
-  byDirection:{BUY:by(buys),SELL:by(sells)}
+  byDirection:{BUY:by(buys),SELL:by(sells)},\n    engulfing:{detectedTrades:patternTrades.length,alignedSignals:patternAligned.length,contrarySignals:patternTrades.length-patternAligned.length,all:patternOutcomes(patternTrades),aligned:patternOutcomes(patternAligned)}
 },null,2));
 
 fs.mkdirSync("artifacts",{recursive:true});
 fs.writeFileSync("artifacts/backtest-pips.json",JSON.stringify({configuration:{pipSize:PIP_SIZE,pipDefinition:"1 pip = 0.01 XAU/USD price move",rMultiple:R_MULTIPLE},trades},null,2));
-fs.writeFileSync("artifacts/backtest-pips.csv",["time,signal,confidence,outcome,entry,exitPrice,stopLoss,tp1,tp2,tp3,pips,rMultiple",...trades.map(t=>[t.time,t.signal,t.confidence,t.outcome,t.entry,t.exitPrice,t.stopLoss,t.takeProfits[0],t.takeProfits[1],t.takeProfits[2],t.pips,t.rMultiple].join(","))].join("\n"));
+fs.writeFileSync("artifacts/backtest-pips.csv",["time,signal,confidence,pattern,outcome,entry,exitPrice,stopLoss,tp1,tp2,tp3,pips,rMultiple",...trades.map(t=>[t.time,t.signal,t.confidence,t.pattern,t.outcome,t.entry,t.exitPrice,t.stopLoss,t.takeProfits[0],t.takeProfits[1],t.takeProfits[2],t.pips,t.rMultiple].join(","))].join("\n"));
