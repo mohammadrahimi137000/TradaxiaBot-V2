@@ -54,6 +54,7 @@ function snapshotAt(arr,t){
 }
 
 const PIP_SIZE=0.01; // XAU/USD: 0.01 price move = 1 pip
+const R_MULTIPLE={SL:-1,TP1:0.8,TP2:1.5,TP3:2.3,TIMEOUT:0};
 
 function evaluateTrade(d,r,future){
   const tp=r.takeProfits.map(x=>x.price);
@@ -73,7 +74,8 @@ function evaluateTrade(d,r,future){
   }
   if(outcome==="TIMEOUT"&&hit) { outcome="TP"+hit; exitPrice=tp[hit-1]; }
   const pipDelta=exitPrice==null?0:(d.signal==="BUY"?(exitPrice-r.entry):(r.entry-exitPrice))/PIP_SIZE;
-  return {outcome,exitPrice,pips:Number(pipDelta.toFixed(2)),entry:r.entry,stopLoss:r.stopLoss,takeProfits:tp};
+  const rMultiple=R_MULTIPLE[outcome]??0;
+  return {outcome,exitPrice,pips:Number(pipDelta.toFixed(2)),rMultiple,entry:r.entry,stopLoss:r.stopLoss,takeProfits:tp};
 }
 
 const res=await fetch(DATA_URL);
@@ -110,6 +112,10 @@ const count=x=>trades.filter(t=>t.outcome===x).length;
 const profitPips=trades.filter(t=>t.pips>0).reduce((s,t)=>s+t.pips,0);
 const lossPips=Math.abs(trades.filter(t=>t.pips<0).reduce((s,t)=>s+t.pips,0));
 const netPips=profitPips-lossPips;
+const grossR=trades.reduce((s,t)=>s+t.rMultiple,0);
+const winsR=trades.filter(t=>t.rMultiple>0).reduce((s,t)=>s+t.rMultiple,0);
+const lossesR=Math.abs(trades.filter(t=>t.rMultiple<0).reduce((s,t)=>s+t.rMultiple,0));
+const avgR=trades.length?grossR/trades.length:0;
 const wins=trades.filter(t=>t.outcome.startsWith("TP")).length;
 const buys=trades.filter(t=>t.signal==="BUY");
 const sells=trades.filter(t=>t.signal==="SELL");
@@ -131,11 +137,17 @@ console.log(JSON.stringify({
     profitPips:Number(profitPips.toFixed(2)),
     lossPips:Number(lossPips.toFixed(2)),
     netPips:Number(netPips.toFixed(2)),
-    avgPipsPerTrade:trades.length?Number((netPips/trades.length).toFixed(2)):0
+    avgPipsPerTrade:trades.length?Number((netPips/trades.length).toFixed(2)):0,
+    grossR:Number(grossR.toFixed(4)),
+    positiveR:Number(winsR.toFixed(4)),
+    negativeR:Number(lossesR.toFixed(4)),
+    netR:Number(grossR.toFixed(4)),
+    avgRPerTrade:Number(avgR.toFixed(4)),
+    expectancyR:Number(avgR.toFixed(4))
   },
   byDirection:{BUY:by(buys),SELL:by(sells)}
 },null,2));
 
 fs.mkdirSync("artifacts",{recursive:true});
-fs.writeFileSync("artifacts/backtest-pips.json",JSON.stringify({configuration:{pipSize:PIP_SIZE,pipDefinition:"1 pip = 0.01 XAU/USD price move"},trades},null,2));
-fs.writeFileSync("artifacts/backtest-pips.csv",["time,signal,confidence,outcome,entry,exitPrice,stopLoss,tp1,tp2,tp3,pips",...trades.map(t=>[t.time,t.signal,t.confidence,t.outcome,t.entry,t.exitPrice,t.stopLoss,t.takeProfits[0],t.takeProfits[1],t.takeProfits[2],t.pips].join(","))].join("\n"));
+fs.writeFileSync("artifacts/backtest-pips.json",JSON.stringify({configuration:{pipSize:PIP_SIZE,pipDefinition:"1 pip = 0.01 XAU/USD price move",rMultiple:R_MULTIPLE},trades},null,2));
+fs.writeFileSync("artifacts/backtest-pips.csv",["time,signal,confidence,outcome,entry,exitPrice,stopLoss,tp1,tp2,tp3,pips,rMultiple",...trades.map(t=>[t.time,t.signal,t.confidence,t.outcome,t.entry,t.exitPrice,t.stopLoss,t.takeProfits[0],t.takeProfits[1],t.takeProfits[2],t.pips,t.rMultiple].join(","))].join("\n"));
