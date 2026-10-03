@@ -1,0 +1,18 @@
+name: Pattern Lab Ablation Backtest
+
+on:
+  push:
+    branches: ["v2-pattern-lab"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ablation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run indicator ablation
+        run: node scripts/run_pattern_ablation.mjs
