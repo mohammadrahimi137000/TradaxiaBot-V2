@@ -15,18 +15,44 @@ export function detectEngulfing(candles){
   return{pattern:"NONE",bias:0};
 }
 
-
-export function detectPinBar(candles){
-  if(!Array.isArray(candles)||!candles.length)return{pattern:"NONE",bias:0};
-  const c=candles[candles.length-1];
-  if(!c)return{pattern:"NONE",bias:0};
+function pinBarShape(c){
+  if(!c)return null;
   const range=c.high-c.low;
-  if(!(range>0))return{pattern:"NONE",bias:0};
-  const b=body(c), upper=c.high-Math.max(c.open,c.close), lower=Math.min(c.open,c.close)-c.low;
+  if(!(range>0))return null;
+  const b=body(c),upper=c.high-Math.max(c.open,c.close),lower=Math.min(c.open,c.close)-c.low;
   const bodyRatio=b/range;
   const bull=lower>=b*2&&lower>=upper*1.25&&bodyRatio<=0.45;
   const bear=upper>=b*2&&upper>=lower*1.25&&bodyRatio<=0.45;
   if(bull)return{pattern:"BULLISH_PIN_BAR",bias:1};
   if(bear)return{pattern:"BEARISH_PIN_BAR",bias:-1};
-  return{pattern:"NONE",bias:0};
+  return null;
+}
+
+export function detectPinBar(candles, levels=null){
+  if(!Array.isArray(candles)||candles.length<2)return{pattern:"NONE",bias:0,confirmed:false,levelConfirmed:false,candleConfirmed:false};
+  const pin=candles[candles.length-2],confirm=candles[candles.length-1];
+  const shape=pinBarShape(pin);
+  if(!shape)return{pattern:"NONE",bias:0,confirmed:false,levelConfirmed:false,candleConfirmed:false};
+
+  const support=levels?.nearestSupport;
+  const resistance=levels?.nearestResistance;
+  const levelConfirmed=shape.bias>0
+    ? !!support && pin.low<=support.high && pin.high>=support.low
+    : !!resistance && pin.high>=resistance.low && pin.low<=resistance.high;
+
+  const candleConfirmed=shape.bias>0
+    ? confirm.close>pin.high
+    : confirm.close<pin.low;
+
+  const confirmed=levelConfirmed&&candleConfirmed;
+  return{
+    pattern:shape.pattern,
+    bias:shape.bias,
+    confirmed,
+    confirmedBias:confirmed?shape.bias:0,
+    levelConfirmed,
+    candleConfirmed,
+    pinTime:pin.time,
+    confirmationTime:confirm.time
+  };
 }
