@@ -23,8 +23,10 @@ export function makeDecision(market){
   const best=Math.max(L,S),gap=Math.abs(L-S);
   let signal=L>S?"BUY":"SELL";
   const h1=f["1h"],m30=f["30min"],m15=f["15min"],m5=f["5min"];
-  const diagnostics={valid:true,best,gap,atrPct,rsi:m15.rsi??50,alignedHTF,aligned15,m5NotOppose,rsiOK,volatilityOK};
-  if(!h1?.valid||!m30?.valid||!m15?.valid)return{signal:"WAIT",confidence:Math.round(Math.min(100,best)),reasons:["تایم‌فریم‌های اصلی کامل نیستند"],diagnostics};
+  if(!h1?.valid||!m30?.valid||!m15?.valid){
+    const diagnostics={valid:true,best,gap,rsi:m15?.rsi??50};
+    return{signal:"WAIT",confidence:Math.round(Math.min(100,best)),reasons:["تایم‌فریم‌های اصلی کامل نیستند"],diagnostics};
+  }
 
   const alignedHTF=(signal==="BUY"?h1.trend==="bullish"&&m30.trend==="bullish":h1.trend==="bearish"&&m30.trend==="bearish");
   const aligned15=signal==="BUY"?m15.structure==="bullish"&&m15.trend!=="bearish":m15.structure==="bearish"&&m15.trend!=="bullish";
@@ -32,6 +34,7 @@ export function makeDecision(market){
   const rsiOK=signal==="BUY"?(m15.rsi??50)<72:(m15.rsi??50)>28;
   const atrPct=m15.atr&&m15.price?m15.atr/m15.price:0;
   const volatilityOK=atrPct>=0.00025&&atrPct<=0.004;
+  const diagnostics={valid:true,best,gap,atrPct,rsi:m15.rsi??50,alignedHTF,aligned15,m5NotOppose,rsiOK,volatilityOK};
 
   if(best<72||gap<18)return{signal:"WAIT",confidence:Math.round(Math.min(100,best)),reasons:["قدرت یا اختلاف سیگنال کافی نیست"],diagnostics};
   if(!alignedHTF||!aligned15||!m5NotOppose||!rsiOK||!volatilityOK)return{signal:"WAIT",confidence:Math.round(Math.min(100,best)),reasons:["فیلتر ورود اجازه معامله نمی‌دهد"],diagnostics};
