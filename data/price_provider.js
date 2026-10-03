@@ -1,10 +1,4 @@
-// TradaxiaBot V2 - Price Provider
-// Data layer placeholder for market price sources.
-
-export async function getPrice(symbol = "XAU/USD") {
-  return {
-    symbol,
-    price: null,
-    source: "pending"
-  };
-}
+import {normalizeCandles} from "./candle_manager.js";
+const intervals={"1min":"1min","5min":"5min","15min":"15min","30min":"30min","1h":"1h"};
+export async function getCandles(env,interval="15min",outputsize=500){const key=env?.TWELVE_DATA_API_KEY;if(!key)throw new Error("TWELVE_DATA_API_KEY is not configured");const base=env.TWELVE_DATA_BASE_URL||"https://api.twelvedata.com",u=new URL("/time_series",base);u.searchParams.set("symbol",env.XAU_SYMBOL||"XAU/USD");u.searchParams.set("interval",intervals[interval]||interval);u.searchParams.set("outputsize",String(outputsize));u.searchParams.set("apikey",key);const r=await fetch(u,{cf:{cacheTtl:20,cacheEverything:true}});if(!r.ok)throw new Error("market_data_http_"+r.status);const b=await r.json();if(b.status==="error"||!Array.isArray(b.values))throw new Error(b.message||"invalid_market_data");return normalizeCandles(b.values)}
+export async function getMultiTimeframe(env,list=["1h","30min","15min","5min","1min"],size=500){const out={};for(const tf of list)out[tf]=await getCandles(env,tf,size);return out}
